@@ -1,24 +1,24 @@
-# 🚀 PRO FIRE 動態退休與再平衡推估引擎
+# 🚀 PRO FIRE 動態退休與再平衡推估引擎 (純前端版)
 
-這是一個專為台灣美股投資人設計的動態資產再平衡與退休提領試算工具。結合 `yfinance` 即時報價，能自動化試算投資組合的容錯率，並產出再平衡行動清單與 4% 法則的提領路徑。
+這是一個專為台灣美股投資人設計的動態資產再平衡與退休提領試算工具。
+本專案採用純靜態網頁架構，無需後端伺服器，使用者手動輸入即時股價與匯率後，系統將自動化試算投資組合的容錯率，並產出再平衡行動清單與 4% 法則的提領路徑。
 
 ## 🛠️ 技術架構
 * **前端 (Frontend):** 純 HTML5, JavaScript (ES6), Tailwind CSS (CDN)
-* **後端 (Backend):** Python 3, FastAPI, yfinance, Pydantic
+* **後端 (Backend):** 無 (Serverless / GitHub Pages 友善)
 
-## 🚀 如何在本地端啟動
+## 🚀 如何使用與部署
 
-1. **安裝後端依賴套件**
-   ```bash
-   pip install -r requirements.txt
+### 本地端測試
+1. 下載本專案至個人電腦。
+2. 直接使用任何現代瀏覽器（如 Chrome, Edge）雙擊開啟 `index.html` 即可運行。
 
-啟動 FastAPI 後端伺服器
-請在專案根目錄下執行：
+### 雲端部署 (GitHub Pages)
+1. 將此專案推送到 GitHub 儲存庫。
+2. 至專案 `Settings` -> `Pages`。
+3. Source 選擇 `Deploy from a branch`，Branch 選擇 `main` 並儲存。
+4. 等待數分鐘後，即可透過 GitHub 提供的專屬網址隨時隨地開啟試算引擎！
 
-Bash
-uvicorn backend.main:app --reload
-伺服器將運行於 http://127.0.0.1:8000
-
-開啟前端頁面
-直接用瀏覽器打開 frontend/index.html 即可開始使用。
-
+## 📊 核心運算邏輯
+1. **再平衡引擎**：比對「目前佔比」與「目標佔比」，若差距大於「容錯率」，系統會自動換算該買/賣多少股數。
+2. **退休提領引擎**：自動切分「資產自然配息（預設台股 3%、美股 1.5%）」與「資金缺口（需賣股變現）」，完整規劃現金流。
