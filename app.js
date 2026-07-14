@@ -14,23 +14,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// 新增資產列的函數 (加入了目前單價欄位)
+// 新增資產列的函數 (升級排版與加入明確標籤)
 function addAssetRow(ticker='', shares='', price='', weight='', currency='TWD') {
     const container = document.getElementById('asset-inputs');
     const row = document.createElement('div');
-    row.className = "grid grid-cols-2 gap-2 bg-slate-900 p-3 rounded border border-slate-700 asset-row relative";
+    
+    // 升級外框樣式：增加內距、稍微提亮背景、加入陰影
+    row.className = "bg-slate-800/80 p-4 rounded-xl border border-slate-600 relative asset-row shadow-md mb-4 transition-all hover:border-cyan-700";
+    
     row.innerHTML = `
-        <input type="text" placeholder="代號 (如 0050)" value="${ticker}" class="t_ticker w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-white px-2">
-        <select class="t_currency w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-white px-2">
-            <option value="TWD" ${currency==='TWD'?'selected':''}>TWD</option>
-            <option value="USD" ${currency==='USD'?'selected':''}>USD</option>
-        </select>
-        <div class="col-span-2 grid grid-cols-3 gap-2 mt-1">
-            <input type="number" placeholder="股數" value="${shares}" class="t_shares w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-white px-2" title="股數">
-            <input type="number" placeholder="單價" value="${price}" class="t_price w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-white px-2" title="目前單價">
-            <input type="number" placeholder="目標%" value="${weight}" class="t_weight w-full bg-slate-800 border border-slate-600 rounded p-1 text-sm text-white px-2" title="目標佔比">
+        <button class="absolute top-2 right-3 text-gray-500 hover:text-red-400 transition text-xl font-bold btn-remove" title="移除此標的">×</button>
+        
+        <div class="grid grid-cols-2 gap-3 mb-4 pr-6">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5 tracking-wide">標的代號</label>
+                <input type="text" placeholder="如 0050.TW" value="${ticker}" class="t_ticker w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5 tracking-wide">計價幣別</label>
+                <select class="t_currency w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition">
+                    <option value="TWD" ${currency==='TWD'?'selected':''}>TWD (台幣)</option>
+                    <option value="USD" ${currency==='USD'?'selected':''}>USD (美金)</option>
+                </select>
+            </div>
         </div>
-        <button class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center btn-remove">×</button>
+
+        <div class="grid grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5 tracking-wide">持有股數</label>
+                <input type="number" placeholder="數量" value="${shares}" class="t_shares w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5 tracking-wide">目前單價</label>
+                <input type="number" placeholder="價格" value="${price}" class="t_price w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1.5 tracking-wide">目標佔比(%)</label>
+                <input type="number" placeholder="%" value="${weight}" class="t_weight w-full bg-slate-900 border border-slate-600 rounded-lg p-2 text-sm text-cyan-300 font-semibold focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition">
+            </div>
+        </div>
     `;
     
     // 綁定刪除按鈕
