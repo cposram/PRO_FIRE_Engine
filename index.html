@@ -3,105 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO FIRE 動態退休推估引擎 (純前端版)</title>
+    <title>PRO FIRE 動態退休推估引擎</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen p-6">
 
-    <header class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-bold text-cyan-400">🚀 PRO FIRE <span class="text-white text-xl">動態退休推估引擎</span></h1>
-        <div class="bg-slate-800 px-4 py-2 rounded-lg text-sm text-gray-300 border border-slate-700">純前端計算模式 (GitHub Pages)</div>
+    <header class="flex items-center justify-between mb-8 border-b border-slate-700 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl">🚀</span>
+            <h1 class="text-3xl font-bold text-cyan-400">PRO FIRE <span class="text-white text-xl ml-2">動態退休推估引擎</span></h1>
+        </div>
+        <div class="bg-slate-800 px-4 py-2 rounded-lg text-xs text-gray-400 border border-slate-700">
+            純前端計算模式 (無伺服器)
+        </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl h-fit">
-            <h2 class="text-xl font-semibold mb-4 border-b border-slate-600 pb-2">⚙️ 基礎參數與匯率</h2>
+        <!-- 左側：基礎策略參數區 -->
+        <div class="lg:col-span-4 xl:col-span-3 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl h-fit">
+            <h2 class="text-lg font-semibold mb-4 border-b border-slate-600 pb-2 flex items-center gap-2">
+                <span>⚙️</span> 基礎參數與匯率
+            </h2>
             
             <div class="mb-4">
-                <label class="block text-sm text-gray-400 mb-1">美金對台幣匯率 (USD/TWD)</label>
-                <input type="number" id="param-fx" value="32.5" step="0.01" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-cyan-500">
+                <label class="block text-xs text-gray-400 mb-1 tracking-wide">美金對台幣匯率 (USD/TWD)</label>
+                <input type="number" id="param-fx" value="32.5" step="0.01" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none transition">
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">容錯率 (%)</label>
-                    <input type="number" id="param-tolerance" value="5" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-cyan-500">
+                    <label class="block text-xs text-gray-400 mb-1 tracking-wide">容錯率 (%)</label>
+                    <input type="number" id="param-tolerance" value="5" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none transition">
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">提領率 (%)</label>
-                    <input type="number" id="param-withdrawal" value="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-cyan-500">
+                    <label class="block text-xs text-gray-400 mb-1 tracking-wide">安全提領率 (%)</label>
+                    <input type="number" id="param-withdrawal" value="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white focus:border-cyan-500 outline-none transition">
                 </div>
             </div>
 
-            <h3 class="text-lg font-semibold mt-6 mb-3 text-cyan-300">加入資產標的</h3>
-            <div class="space-y-3" id="asset-inputs">
-                </div>
+            <!-- 全新設計的：對齊表格式資產輸入區 -->
+            <h3 class="text-md font-semibold mt-8 mb-3 text-cyan-300 border-b border-slate-700 pb-2">加入資產標的</h3>
             
-            <button id="btn-add-asset" class="mt-4 w-full py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm transition font-bold text-gray-200">+ 新增一檔股票</button>
-            <button id="btn-run-engine" class="mt-4 w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded text-white font-bold shadow-lg transition text-lg">⚡ 執行引擎計算</button>
+            <!-- 固定標題列 -->
+            <div class="grid grid-cols-12 gap-1 mb-2 text-[11px] text-gray-400 font-bold px-1 tracking-wider">
+                <div class="col-span-3">標的代號</div>
+                <div class="col-span-2">幣別</div>
+                <div class="col-span-3 text-right pr-1">持有股數</div>
+                <div class="col-span-2 text-right pr-1">單價</div>
+                <div class="col-span-2 text-center">目標%</div>
+            </div>
+
+            <!-- 動態輸入列容器 -->
+            <div class="space-y-1" id="asset-inputs">
+                <!-- JavaScript 會把輸入列塞在這裡 -->
+            </div>
+            
+            <button id="btn-add-asset" class="mt-4 w-full py-2 border border-slate-600 border-dashed hover:border-cyan-500 hover:text-cyan-400 rounded-lg text-xs transition font-bold text-gray-400 bg-slate-800/50">+ 新增一列資產</button>
+            
+            <button id="btn-run-engine" class="mt-6 w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white font-bold shadow-lg transition text-md flex items-center justify-center gap-2">
+                <span>⚡</span> 執行引擎計算
+            </button>
         </div>
 
-        <div class="lg:col-span-3 space-y-6">
+        <!-- 右側：儀表板與明細 -->
+        <div class="lg:col-span-8 xl:col-span-9 space-y-6">
             
+            <!-- 上方 KPI 卡片 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <p class="text-sm text-gray-400">總資產市值 (TWD)</p>
-                    <p class="text-4xl font-bold mt-1 text-white" id="kpi-total">$--</p>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10 text-8xl">💰</div>
+                    <p class="text-sm text-gray-400 tracking-wide">總資產市值 (TWD)</p>
+                    <p class="text-4xl font-bold mt-2 text-white" id="kpi-total">$--</p>
                 </div>
-                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-                    <p class="text-sm text-gray-400">預估首年提領金 (TWD)</p>
-                    <p class="text-4xl font-bold mt-1 text-green-400" id="kpi-withdraw">$--</p>
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10 text-8xl">🎯</div>
+                    <p class="text-sm text-gray-400 tracking-wide">預估首年提領金額 (TWD)</p>
+                    <p class="text-4xl font-bold mt-2 text-green-400" id="kpi-withdraw">$--</p>
                 </div>
             </div>
 
-            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <!-- 下方明細表格區 -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+                <!-- 頁籤 -->
                 <div class="flex bg-slate-900 border-b border-slate-700">
-                    <button class="px-6 py-3 font-semibold text-cyan-400 border-b-2 border-cyan-400 tab-trigger" data-target="tab-1">資產與再平衡狀態</button>
-                    <button class="px-6 py-3 font-semibold text-gray-400 hover:text-white transition tab-trigger" data-target="tab-2">退休現金流規劃</button>
+                    <button class="px-6 py-4 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400 tab-trigger" data-target="tab-1">資產與再平衡狀態</button>
+                    <button class="px-6 py-4 text-sm font-semibold text-gray-400 hover:text-white transition tab-trigger" data-target="tab-2">退休現金流規劃</button>
                 </div>
 
+                <!-- 頁籤一：資產狀態 -->
                 <div class="p-6 overflow-x-auto tab-content" id="tab-1">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="text-gray-400 border-b border-slate-600 text-sm">
-                                <th class="pb-3 pr-4">標的</th>
-                                <th class="pb-3 pr-4">目前股數</th>
-                                <th class="pb-3 pr-4">單價設定</th>
-                                <th class="pb-3 pr-4">目前佔比</th>
-                                <th class="pb-3 pr-4">目標佔比</th>
-                                <th class="pb-3">狀態警示</th>
+                            <tr class="text-gray-400 border-b border-slate-600 text-xs tracking-wider">
+                                <th class="pb-3 pr-4 font-semibold">標的</th>
+                                <th class="pb-3 pr-4 font-semibold">目前股數</th>
+                                <th class="pb-3 pr-4 font-semibold">單價設定</th>
+                                <th class="pb-3 pr-4 font-semibold">目前佔比</th>
+                                <th class="pb-3 pr-4 font-semibold">目標佔比</th>
+                                <th class="pb-3 font-semibold">狀態警示</th>
                             </tr>
                         </thead>
                         <tbody id="table-assets" class="text-sm">
-                            <tr><td colspan="6" class="py-4 text-center text-gray-500">請確認左方資產設定後點擊執行計算</td></tr>
+                            <tr><td colspan="6" class="py-8 text-center text-gray-500">請確認左方資產設定後，點擊「執行引擎計算」</td></tr>
                         </tbody>
                     </table>
                     
-                    <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
-                        <h4 class="text-cyan-300 font-bold mb-2">📋 行動清單 (Rebalance Action Plan)</h4>
-                        <ul id="action-list" class="list-disc pl-5 text-gray-300 space-y-1">
+                    <div class="mt-6 bg-slate-900/80 p-5 rounded-lg border border-slate-700">
+                        <h4 class="text-cyan-300 font-bold mb-3 flex items-center gap-2">
+                            <span>📋</span> 行動清單 (Rebalance Action Plan)
+                        </h4>
+                        <ul id="action-list" class="list-disc pl-5 text-gray-300 space-y-1.5 text-sm">
                             <li>無須動作</li>
                         </ul>
                     </div>
                 </div>
 
+                <!-- 頁籤二：退休提領 -->
                 <div class="p-6 hidden tab-content" id="tab-2">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-slate-900 p-5 rounded-lg border border-slate-700">
-                            <p class="text-gray-400 text-sm">第一步：自然股息收益 (不傷本)</p>
-                            <p class="text-2xl font-bold text-green-400 mt-1" id="ret-dividend">$--</p>
-                            <p class="text-xs text-gray-500 mt-2">註：系統預設 TWD 資產殖利率 3%，USD 資產 1.5% 進行估算。</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-inner">
+                            <p class="text-gray-400 text-xs tracking-wider mb-1">第一步：自然股息收益 (不傷本)</p>
+                            <p class="text-3xl font-bold text-green-400 mt-1" id="ret-dividend">$--</p>
+                            <p class="text-xs text-gray-500 mt-3 pt-3 border-t border-slate-800">系統預設殖利率：TWD (3%), USD (1.5%) 估算。</p>
                         </div>
-                        <div class="bg-slate-900 p-5 rounded-lg border border-slate-700 border-l-4 border-l-orange-500">
-                            <p class="text-gray-400 text-sm">第二步：資金缺口 (需賣股變現)</p>
-                            <p class="text-2xl font-bold text-orange-400 mt-1" id="ret-shortfall">$--</p>
-                            <p class="text-xs text-gray-500 mt-2">建議：優先賣出【狀態警示】超標之資產補足缺口。</p>
+                        <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 border-l-4 border-l-orange-500 shadow-inner relative">
+                            <p class="text-gray-400 text-xs tracking-wider mb-1">第二步：資金缺口 (需賣股變現)</p>
+                            <p class="text-3xl font-bold text-orange-400 mt-1" id="ret-shortfall">$--</p>
+                            <p class="text-xs text-gray-500 mt-3 pt-3 border-t border-slate-800">建議策略：優先賣出上方【狀態警示】超標之資產以補足缺口。</p>
                         </div>
                     </div>
                 </div>
@@ -109,6 +146,171 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- 內建運算邏輯，防止快取問題 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 預設給予兩列
+            addAssetRow('0050.TW', '50000', '195', '50', 'TWD');
+            addAssetRow('VOO', '600', '520', '50', 'USD');
+
+            // 綁定按鈕
+            document.getElementById('btn-add-asset').addEventListener('click', () => addAssetRow());
+            document.getElementById('btn-run-engine').addEventListener('click', runEngine);
+            
+            document.querySelectorAll('.tab-trigger').forEach(btn => {
+                btn.addEventListener('click', (e) => switchTab(e.target));
+            });
+        });
+
+        // 全新：精準對齊標題的輸入列生成
+        function addAssetRow(ticker='', shares='', price='', weight='', currency='TWD') {
+            const container = document.getElementById('asset-inputs');
+            const row = document.createElement('div');
+            // 使用 12 欄網格對齊上方的標題，加入 group 類別來控制刪除按鈕顯示
+            row.className = "grid grid-cols-12 gap-1 items-center relative group bg-slate-800/40 p-1 rounded hover:bg-slate-700/40 transition asset-row pr-5";
+            
+            row.innerHTML = `
+                <div class="col-span-3">
+                    <input type="text" placeholder="代號" value="${ticker}" class="t_ticker w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-white focus:border-cyan-500 outline-none transition">
+                </div>
+                <div class="col-span-2">
+                    <select class="t_currency w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-white focus:border-cyan-500 outline-none transition">
+                        <option value="TWD" ${currency==='TWD'?'selected':''}>TWD</option>
+                        <option value="USD" ${currency==='USD'?'selected':''}>USD</option>
+                    </select>
+                </div>
+                <div class="col-span-3">
+                    <input type="number" placeholder="數量" value="${shares}" class="t_shares w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-white text-right focus:border-cyan-500 outline-none transition">
+                </div>
+                <div class="col-span-2">
+                    <input type="number" placeholder="單價" value="${price}" class="t_price w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-white text-right focus:border-cyan-500 outline-none transition">
+                </div>
+                <div class="col-span-2">
+                    <input type="number" placeholder="%" value="${weight}" class="t_weight w-full bg-slate-900 border border-slate-600 rounded p-1.5 text-xs text-cyan-300 font-bold text-center focus:border-cyan-500 outline-none transition">
+                </div>
+                <!-- 隱藏在右側的刪除按鈕，滑鼠移過去才會出現 -->
+                <button class="absolute right-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition text-lg btn-remove font-bold" title="移除此列">×</button>
+            `;
+            
+            row.querySelector('.btn-remove').addEventListener('click', function() {
+                row.remove();
+            });
+
+            container.appendChild(row);
+        }
+
+        // 核心運算
+        function runEngine() {
+            const btn = document.getElementById('btn-run-engine');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = "⏳ 運算中...";
+
+            const fxRate = parseFloat(document.getElementById('param-fx').value) || 32.5;
+            const tolerance = (parseFloat(document.getElementById('param-tolerance').value) || 5) / 100;
+            const withdrawalRate = (parseFloat(document.getElementById('param-withdrawal').value) || 4) / 100;
+
+            const rows = document.querySelectorAll('.asset-row');
+            let assets = [];
+            let totalValueTWD = 0;
+            let expectedDividendTWD = 0;
+
+            rows.forEach(row => {
+                const ticker = row.querySelector('.t_ticker').value.trim();
+                if(!ticker) return;
+
+                const shares = parseFloat(row.querySelector('.t_shares').value) || 0;
+                const price = parseFloat(row.querySelector('.t_price').value) || 0;
+                const targetWeight = (parseFloat(row.querySelector('.t_weight').value) || 0) / 100;
+                const currency = row.querySelector('.t_currency').value;
+
+                const valueLocal = shares * price;
+                const valueTWD = currency === 'USD' ? valueLocal * fxRate : valueLocal;
+                
+                const dividendYield = currency === 'TWD' ? 0.03 : 0.015;
+                const divTWD = valueTWD * dividendYield;
+
+                totalValueTWD += valueTWD;
+                expectedDividendTWD += divTWD;
+
+                assets.push({ ticker, shares, price, currency, valueTWD, targetWeight });
+            });
+
+            let actions = [];
+            assets.forEach(a => {
+                a.currentWeight = totalValueTWD > 0 ? (a.valueTWD / totalValueTWD) : 0;
+                const weightDiff = a.currentWeight - a.targetWeight;
+
+                if (Math.abs(weightDiff) > tolerance) {
+                    a.alert = "🔴 需再平衡";
+                    const targetValueTWD = totalValueTWD * a.targetWeight;
+                    const diffTWD = a.valueTWD - targetValueTWD;
+                    const diffLocal = a.currency === 'USD' ? diffTWD / fxRate : diffTWD;
+                    const sharesToAction = a.price > 0 ? (diffLocal / a.price) : 0;
+                    
+                    const actionType = sharesToAction > 0 ? "賣出" : "買入";
+                    actions.push(`👉 建議 <span class="${actionType === '賣出' ? 'text-orange-400':'text-green-400'} font-bold">${actionType}</span> ${a.ticker} 約 ${Math.abs(Math.round(sharesToAction)).toLocaleString()} 股 (目標佔比 ${(a.targetWeight*100).toFixed(1)}%)`);
+                } else {
+                    a.alert = "🟢 正常範圍";
+                }
+            });
+
+            const targetWithdrawalTWD = totalValueTWD * withdrawalRate;
+            const shortfallTWD = targetWithdrawalTWD - expectedDividendTWD;
+
+            updateDashboard({
+                totalValueTWD: Math.round(totalValueTWD),
+                assets: assets,
+                actions: actions,
+                retirementPlan: {
+                    targetWithdrawal: Math.round(targetWithdrawalTWD),
+                    coveredByDividend: Math.round(expectedDividendTWD),
+                    shortfallToSell: shortfallTWD > 0 ? Math.round(shortfallTWD) : 0
+                }
+            });
+
+            setTimeout(() => { btn.innerHTML = originalHTML; }, 300);
+        }
+
+        // 渲染畫面
+        function updateDashboard(data) {
+            document.getElementById('kpi-total').innerText = "$" + data.totalValueTWD.toLocaleString();
+            document.getElementById('kpi-withdraw').innerText = "$" + data.retirementPlan.targetWithdrawal.toLocaleString();
+            
+            const tbody = document.getElementById('table-assets');
+            tbody.innerHTML = "";
+            
+            data.assets.forEach(a => {
+                let alertColor = a.alert.includes('🔴') ? 'text-orange-400 font-bold bg-orange-400/10 px-2 py-1 rounded' : 'text-green-400 bg-green-400/10 px-2 py-1 rounded';
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+                        <td class="py-4 font-bold text-white">${a.ticker}</td>
+                        <td class="py-4 text-gray-300">${a.shares.toLocaleString()}</td>
+                        <td class="py-4 text-gray-300">$${a.price.toLocaleString()} <span class="text-xs text-gray-500">${a.currency}</span></td>
+                        <td class="py-4 font-medium">${(a.currentWeight * 100).toFixed(1)}%</td>
+                        <td class="py-4 text-cyan-400 font-bold">${(a.targetWeight * 100).toFixed(1)}%</td>
+                        <td class="py-4"><span class="${alertColor} text-xs tracking-wide">${a.alert}</span></td>
+                    </tr>
+                `;
+            });
+
+            const actionList = document.getElementById('action-list');
+            actionList.innerHTML = data.actions.length === 0 
+                ? "<li class='text-green-400 flex items-center gap-2'><span>✅</span> 所有資產均在容錯率範圍內，無需動作。</li>" 
+                : data.actions.map(act => `<li class="py-1 border-b border-slate-700/50 last:border-0">${act}</li>`).join("");
+
+            document.getElementById('ret-dividend').innerText = "$" + data.retirementPlan.coveredByDividend.toLocaleString();
+            document.getElementById('ret-shortfall').innerText = "$" + data.retirementPlan.shortfallToSell.toLocaleString();
+        }
+
+        function switchTab(clickedBtn) {
+            const targetId = clickedBtn.getAttribute('data-target');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.querySelectorAll('.tab-trigger').forEach(btn => {
+                btn.className = "px-6 py-4 text-sm font-semibold text-gray-400 hover:text-white transition tab-trigger";
+            });
+            document.getElementById(targetId).classList.remove('hidden');
+            clickedBtn.className = "px-6 py-4 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400 tab-trigger";
+        }
+    </script>
 </body>
 </html>
