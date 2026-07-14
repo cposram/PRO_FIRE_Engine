@@ -22,11 +22,3 @@ uvicorn backend.main:app --reload
 開啟前端頁面
 直接用瀏覽器打開 frontend/index.html 即可開始使用。
 
-
-**`/requirements.txt`**
-```text
-fastapi==0.110.0
-uvicorn==0.27.1
-yfinance==0.2.37
-pandas==2.2.1
-pydantic==2.6.3
