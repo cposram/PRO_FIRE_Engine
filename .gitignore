@@ -1,1 +1,11 @@
-避免把不必要的暫存檔推上 GitHub
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
