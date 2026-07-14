@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRO FIRE 動態退休推估引擎</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen p-6">
+
+    <header class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold text-cyan-400">🚀 PRO FIRE <span class="text-white text-xl">動態退休推估引擎</span></h1>
+        <div class="bg-slate-800 px-4 py-2 rounded-lg text-sm text-gray-300">匯率參考 (USD/TWD): <span id="fx-display" class="font-bold text-white">--</span></div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl h-fit">
+            <h2 class="text-xl font-semibold mb-4 border-b border-slate-600 pb-2">⚙️ 基礎策略參數</h2>
+            
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1">目標再平衡容錯率 (%)</label>
+                <input type="number" id="param-tolerance" value="5" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-cyan-500">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1">退休安全提領率 (%)</label>
+                <input type="number" id="param-withdrawal" value="4" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <h3 class="text-lg font-semibold mt-6 mb-3 text-cyan-300">加入資產標的</h3>
+            <div class="space-y-3" id="asset-inputs">
+                </div>
+            
+            <button id="btn-add-asset" class="mt-4 w-full py-2 bg-slate-700 hover:bg-slate-600 rounded text-sm transition font-bold">+ 新增一檔股票</button>
+            <button id="btn-run-engine" class="mt-4 w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded text-white font-bold shadow-lg transition">⚡ 執行引擎計算</button>
+        </div>
+
+        <div class="lg:col-span-3 space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <p class="text-sm text-gray-400">總資產市值 (TWD)</p>
+                    <p class="text-3xl font-bold mt-1" id="kpi-total">$--</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <p class="text-sm text-gray-400">預估首年提領金 (TWD)</p>
+                    <p class="text-3xl font-bold mt-1 text-green-400" id="kpi-withdraw">$--</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <p class="text-sm text-gray-400">系統狀態</p>
+                    <p class="text-lg font-bold mt-2" id="kpi-status">🟢 等待計算</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                <div class="flex bg-slate-900 border-b border-slate-700">
+                    <button class="px-6 py-3 font-semibold text-cyan-400 border-b-2 border-cyan-400 tab-trigger" data-target="tab-1">資產與再平衡狀態</button>
+                    <button class="px-6 py-3 font-semibold text-gray-400 hover:text-white transition tab-trigger" data-target="tab-2">退休現金流規劃</button>
+                </div>
+
+                <div class="p-6 overflow-x-auto tab-content" id="tab-1">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-gray-400 border-b border-slate-600 text-sm">
+                                <th class="pb-3 pr-4">標的</th>
+                                <th class="pb-3 pr-4">目前股數</th>
+                                <th class="pb-3 pr-4">即時市價</th>
+                                <th class="pb-3 pr-4">目前佔比</th>
+                                <th class="pb-3 pr-4">目標佔比</th>
+                                <th class="pb-3 pr-4">YTD 漲幅</th>
+                                <th class="pb-3">狀態警示</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-assets" class="text-sm">
+                            <tr><td colspan="7" class="py-4 text-center text-gray-500">請輸入資產後點擊執行計算</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="mt-6 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                        <h4 class="text-cyan-300 font-bold mb-2">📋 行動清單 (Rebalance Action Plan)</h4>
+                        <ul id="action-list" class="list-disc pl-5 text-gray-300 space-y-1">
+                            <li>無須動作</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="p-6 hidden tab-content" id="tab-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-slate-900 p-5 rounded-lg border border-slate-700">
+                            <p class="text-gray-400 text-sm">第一步：自然股息收益 (不傷本)</p>
+                            <p class="text-2xl font-bold text-green-400 mt-1" id="ret-dividend">$--</p>
+                        </div>
+                        <div class="bg-slate-900 p-5 rounded-lg border border-slate-700 border-l-4 border-l-orange-500">
+                            <p class="text-gray-400 text-sm">第二步：資金缺口 (需賣股變現)</p>
+                            <p class="text-2xl font-bold text-orange-400 mt-1" id="ret-shortfall">$--</p>
+                            <p class="text-xs text-gray-500 mt-2">建議：優先賣出【狀態警示】超標之資產補足缺口。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
