@@ -11,3 +11,22 @@
 1. **安裝後端依賴套件**
    ```bash
    pip install -r requirements.txt
+
+啟動 FastAPI 後端伺服器
+請在專案根目錄下執行：
+
+Bash
+uvicorn backend.main:app --reload
+伺服器將運行於 http://127.0.0.1:8000
+
+開啟前端頁面
+直接用瀏覽器打開 frontend/index.html 即可開始使用。
+
+
+**`/requirements.txt`**
+```text
+fastapi==0.110.0
+uvicorn==0.27.1
+yfinance==0.2.37
+pandas==2.2.1
+pydantic==2.6.3
