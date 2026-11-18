@@ -12,6 +12,7 @@
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=range] { accent-color: #22d3ee; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-4 md:p-6">
@@ -22,64 +23,129 @@
             <span class="text-3xl">🚀</span>
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-cyan-400 tracking-tight">PRO FIRE <span class="text-white text-lg md:text-xl font-normal ml-1">動態資產與提領決策引擎</span></h1>
-                <p class="text-xs text-slate-400 mt-0.5">自動記憶持倉狀態 • 即時行情連動 • 股災現金防禦機制</p>
+                <p class="text-xs text-slate-400 mt-0.5">購買力通膨換算 • 兩階段生涯推演 • 複委託稅後精算 • 股災現金防禦</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <span id="save-status" class="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-full">💾 狀態已自動儲存於本機</span>
-            <button onclick="resetDefaultData()" class="text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700 transition">重置預設值</button>
+        <div class="flex flex-wrap items-center gap-2">
+            <span id="save-status" class="text-xs text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-3 py-1.5 rounded-full">💾 已同步儲存於本機</span>
+            <button onclick="exportConfig()" class="text-xs text-cyan-300 hover:text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition" title="匯出設定碼以便跨裝置同步">📤 匯出備份</button>
+            <button onclick="importConfig()" class="text-xs text-cyan-300 hover:text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition" title="貼上備份碼還原持倉">📥 匯入還原</button>
+            <button onclick="resetDefaultData()" class="text-xs text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">重置預設值</button>
         </div>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- 左側：控制與持倉輸入面板 (佔 4 欄) -->
-        <div class="lg:col-span-4 space-y-6">
+        <div class="lg:col-span-4 space-y-5">
             
-            <!-- 全局與防禦參數 -->
+            <!-- 區塊一：退休時間軸與購買力目標 (新增) -->
             <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
-                    <h2 class="text-base font-semibold text-cyan-300">⚙️ 策略與防禦參數</h2>
+                    <h2 class="text-base font-semibold text-cyan-300">⏳ 退休時間軸與購買力目標</h2>
+                    <span id="badge-countdown" class="text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60 px-2.5 py-0.5 rounded-full">倒數 -- 年</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">出生年月日</label>
+                        <input type="date" id="param-birth" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white focus:border-cyan-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">目標退休年齡 (歲)</label>
+                        <input type="number" id="param-retire-age" min="30" max="80" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-cyan-300 font-bold focus:border-cyan-500 outline-none">
+                    </div>
+                </div>
+
+                <!-- 購買力生活費 Bar -->
+                <div class="mb-3 bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs text-slate-300 font-medium">退休年生活費 (今日購買力)</label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="param-living-wan" step="5" class="auto-save w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-sm text-emerald-400 font-bold text-right focus:border-cyan-500 outline-none">
+                            <span class="text-xs text-slate-400">萬/年</span>
+                        </div>
+                    </div>
+                    <input type="range" id="slider-living-wan" min="50" max="300" step="5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                        <span>50萬</span>
+                        <span id="hint-nominal-cost" class="text-emerald-400/90 font-medium">45歲當年約需 -- 萬/年</span>
+                        <span>300萬</span>
+                    </div>
+                </div>
+
+                <!-- 每月新增投入 Bar -->
+                <div class="mb-3 bg-slate-950/70 p-3 rounded-lg border border-slate-800/80">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs text-slate-300 font-medium">退休前每月新資金投入</label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="param-monthly-add-wan" step="0.5" class="auto-save w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-sm text-cyan-400 font-bold text-right focus:border-cyan-500 outline-none">
+                            <span class="text-xs text-slate-400">萬/月</span>
+                        </div>
+                    </div>
+                    <input type="range" id="slider-monthly-add" min="0" max="25" step="0.5" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+                    <p class="text-[10px] text-slate-500 mt-1">預設 100% 導向落後目標的美股/全球標的 (VOO/VT)</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">預估年均通膨率 (%)</label>
+                        <input type="number" id="param-inflation" step="0.1" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">預期年化報酬率 (%)</label>
+                        <input type="number" id="param-return" step="0.1" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 區塊二：防禦參數、匯率與質押監控 -->
+            <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-4">
+                    <h2 class="text-base font-semibold text-cyan-300">🛡️ 提領防禦與融資監控</h2>
                     <button onclick="fetchLiveMarketData()" id="btn-fetch" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded transition flex items-center gap-1">
                         <span>🔄</span> 抓取最新市價與匯率
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="grid grid-cols-3 gap-2 mb-3">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">USD/TWD 匯率</label>
+                        <label class="block text-[11px] text-slate-400 mb-1">USD/TWD 匯率</label>
                         <input type="number" id="param-fx" step="0.01" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">現金緩衝池 (萬台幣)</label>
-                        <input type="number" id="param-cash" step="1" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-amber-300 font-semibold focus:border-cyan-500 outline-none" title="股災時不賣股，改用此現金生活">
+                        <label class="block text-[11px] text-slate-400 mb-1">現金緩衝池(萬)</label>
+                        <input type="number" id="param-cash" step="5" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-amber-300 font-semibold focus:border-cyan-500 outline-none" title="股災時不賣股，改用此現金生活">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">台股質押借款(萬)</label>
+                        <input type="number" id="param-loan" step="5" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-purple-300 font-semibold focus:border-cyan-500 outline-none" title="輸入目前已質押借款金額，自動計算擔保維持率">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-3 gap-2">
                     <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">安全提領率(%)</label>
+                        <input type="number" id="param-withdrawal" step="0.1" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-emerald-300 font-semibold focus:border-cyan-500 outline-none" title="45歲提早退休建議設為 3.5%">
+                    </div>
+                    <div>
                         <label class="block text-[11px] text-slate-400 mb-1">再平衡容錯(%)</label>
                         <input type="number" id="param-tolerance" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-[11px] text-slate-400 mb-1">安全提領率(%)</label>
-                        <input type="number" id="param-withdrawal" step="0.1" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
-                    </div>
-                    <div>
                         <label class="block text-[11px] text-slate-400 mb-1">股災警戒跌幅(%)</label>
-                        <input type="number" id="param-crash-threshold" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-rose-400 focus:border-cyan-500 outline-none" title="當年度跌幅超過此值，啟動現金防禦不賣股">
+                        <input type="number" id="param-crash-threshold" class="auto-save w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-rose-400 focus:border-cyan-500 outline-none">
                     </div>
                 </div>
             </div>
 
-            <!-- 持倉明細輸入 -->
+            <!-- 區塊三：持倉明細輸入 -->
             <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl">
                 <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
-                    <h2 class="text-base font-semibold text-cyan-300">📊 投資組合持倉 (自動記憶)</h2>
-                    <span class="text-[11px] text-slate-400">修改即自動重算</span>
+                    <h2 class="text-base font-semibold text-cyan-300">📊 投資組合持倉</h2>
+                    <span id="weight-sum-badge" class="text-[11px] text-slate-400">目標權重總和: 100%</span>
                 </div>
 
-                <!-- 表頭 -->
                 <div class="grid grid-cols-12 gap-1 mb-2 text-[11px] text-slate-400 font-bold px-1">
                     <div class="col-span-3">代號</div>
                     <div class="col-span-2">幣別</div>
@@ -97,47 +163,100 @@
         </div>
 
         <!-- 右側：動態儀表板與決策建議 (佔 8 欄) -->
-        <div class="lg:col-span-8 space-y-6">
+        <div class="lg:col-span-8 space-y-5">
             
+            <!-- 新增：FIRE 退休日達標進度 Bar -->
+            <div class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            <span>🏁</span> <span id="fire-goal-title">45 歲提早退休達標進度 (2035年)</span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5" id="fire-goal-subtitle">
+                            目前 -- 歲，距離退休日還有 -- 年
+                        </p>
+                    </div>
+                    <div class="text-left md:text-right">
+                        <span class="text-xs text-slate-400">退休首年所需生活費(含通膨)：</span>
+                        <span class="text-sm font-bold text-emerald-400" id="fire-nominal-need">$--</span>
+                        <span class="text-xs text-slate-500 ml-1" id="fire-target-pool">(達標門檻: $--)</span>
+                    </div>
+                </div>
+
+                <!-- 雙層進度條 -->
+                <div class="space-y-2.5">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">目前現有投資資產進度：<b id="now-invested-label" class="text-white">$--</b></span>
+                            <span class="text-cyan-400 font-bold" id="now-progress-pct">--%</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-2.5 border border-slate-800 overflow-hidden">
+                            <div id="bar-now-progress" class="bg-cyan-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-300">退休日預估累積總資產 (含複利與新投入)：<b id="proj-retire-label" class="text-emerald-400">$--</b></span>
+                            <span id="proj-progress-badge" class="font-bold text-emerald-400">--%</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-2.5 border border-slate-800 overflow-hidden">
+                            <div id="bar-proj-progress" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新增：台美股宏觀比例追蹤 Bar -->
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                    <span class="text-xs font-semibold text-slate-300">🌏 台股 vs 美股/全球 宏觀集中度追蹤</span>
+                    <span class="text-xs text-cyan-300" id="macro-proj-hint">若新資金全買美股，退休日美股佔比將達 --%</span>
+                </div>
+                <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden flex text-[10px] font-bold">
+                    <div id="bar-tw-share" class="bg-amber-500/90 text-slate-950 flex items-center justify-center transition-all duration-500" style="width: 50%">台股 --%</div>
+                    <div id="bar-us-share" class="bg-indigo-500 text-white flex items-center justify-center transition-all duration-500" style="width: 50%">美股/全球 --%</div>
+                </div>
+            </div>
+
             <!-- 頂部四大 KPI 卡片 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
                     <p class="text-xs text-slate-400">投資組合總市值 (TWD)</p>
-                    <p class="text-2xl font-bold mt-1 text-white" id="kpi-invested">$--</p>
-                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-total-with-cash">含現金總資產: $--</p>
+                    <p class="text-xl md:text-2xl font-bold mt-1 text-white" id="kpi-invested">$--</p>
+                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-net-worth">扣除質押淨資產: $--</p>
                 </div>
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <p class="text-xs text-slate-400">當年目標提領額 (4%)</p>
-                    <p class="text-2xl font-bold mt-1 text-emerald-400" id="kpi-withdraw">$--</p>
+                    <p class="text-xs text-slate-400" id="kpi-swr-label">當前資產可提領額 (3.5%)</p>
+                    <p class="text-xl md:text-2xl font-bold mt-1 text-emerald-400" id="kpi-withdraw">$--</p>
                     <p class="text-[11px] text-slate-500 mt-1" id="kpi-monthly">約每月 $--</p>
                 </div>
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <p class="text-xs text-slate-400">預估自然現金股息</p>
-                    <p class="text-2xl font-bold mt-1 text-cyan-400" id="kpi-dividend">$--</p>
-                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-div-cover">覆蓋率: --%</p>
+                    <p class="text-xs text-slate-400">稅後自然現金股息</p>
+                    <p class="text-xl md:text-2xl font-bold mt-1 text-cyan-400" id="kpi-dividend">$--</p>
+                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-div-cover">美股已扣30%稅 • 覆蓋率 --%</p>
                 </div>
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <p class="text-xs text-slate-400">現金緩衝池可撐年數</p>
-                    <p class="text-2xl font-bold mt-1 text-amber-400" id="kpi-cash-years">-- 年</p>
-                    <p class="text-[11px] text-slate-500 mt-1">股災不賣股安全氣囊</p>
+                    <p class="text-xs text-slate-400">安全氣囊與質押維持率</p>
+                    <p class="text-xl md:text-2xl font-bold mt-1 text-amber-400" id="kpi-cash-years">-- 年</p>
+                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-ltv-status">無質押借款 (安全)</p>
                 </div>
             </div>
 
             <!-- 核心決策引擎：當年該怎麼提領？賣股還是忍痛拿現金？ -->
-            <div id="decision-banner" class="p-5 rounded-xl border shadow-lg transition-all">
-                <!-- 由 JS 動態生成決策建議 -->
-            </div>
+            <div id="decision-banner" class="p-5 rounded-xl border shadow-lg transition-all"></div>
 
             <!-- 動態圖表區 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-sm font-semibold text-slate-300 mb-3">🎯 目前配置 vs 目標配置</h3>
-                    <div class="h-56 relative">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-3">🎯 各標的目前佔比 vs 目標配置</h3>
+                    <div class="h-60 relative">
                         <canvas id="allocationChart"></canvas>
                     </div>
                 </div>
                 <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
-                    <h3 class="text-sm font-semibold text-slate-300 mb-3">📈 未來 20 年資產與提領推演 (假設年化7%)</h3>
+                    <h3 class="text-sm font-semibold text-slate-300 mb-1">📈 全生涯推演：累積期 ➔ 退休提領至 85 歲</h3>
+                    <p class="text-[11px] text-slate-500 mb-2" id="chart-sub-desc">退休前只進不出；退休後依通膨每年提領生活費</p>
                     <div class="h-56 relative">
                         <canvas id="projectionChart"></canvas>
                     </div>
@@ -157,6 +276,7 @@
                                 <th class="pb-3">標的</th>
                                 <th class="pb-3 text-right">股數</th>
                                 <th class="pb-3 text-right">目前市價</th>
+                                <th class="pb-3 text-right">台幣現值</th>
                                 <th class="pb-3 text-right">YTD 漲跌</th>
                                 <th class="pb-3 text-right">目前佔比</th>
                                 <th class="pb-3 text-right">目標佔比</th>
@@ -177,19 +297,27 @@
 
     <script>
         // ==========================================
-        // 1. 狀態管理 (LocalStorage 取代後端資料庫)
+        // 1. 狀態管理 (LocalStorage V3)
         // ==========================================
-        const STORAGE_KEY = 'PRO_FIRE_ENGINE_STATE_V2';
+        const STORAGE_KEY = 'PRO_FIRE_ENGINE_STATE_V3';
         
         const DEFAULT_STATE = {
+            birthDate: '1990-01-03',
+            targetRetireAge: 45,
+            livingCostWan: 100,      // 退休後每年生活費 (今日購買力，萬)
+            monthlyAddWan: 4.5,      // 退休前每月新增投入 (萬，全買美股/落後標的)
+            inflationRate: 2.0,      // 年均通膨率 (%)
+            expectedReturn: 7.0,     // 預期年化報酬率 (%)
             fxRate: 32.5,
-            cashBufferWan: 150, // 150萬台幣現金緩衝
+            cashBufferWan: 250,      // 250萬現金緩衝 (約2~2.5年生活費)
+            loanAmountWan: 0,        // 台股質押借款金額 (萬)
             tolerance: 5,
-            withdrawalRate: 4.0,
-            crashThreshold: -15, // 跌幅超過 -15% 啟動現金防禦
+            withdrawalRate: 3.5,     // 45歲提早退休建議 3.5%
+            crashThreshold: -15,
             assets: [
-                { ticker: '0050.TW', currency: 'TWD', shares: 30000, price: 195, targetWeight: 50, ytd: 18.5 },
-                { ticker: 'VOO', currency: 'USD', shares: 350, price: 530, targetWeight: 50, ytd: 12.2 }
+                { ticker: '0050.TW', currency: 'TWD', shares: 82000, price: 94, targetWeight: 35, ytd: 18.5 },
+                { ticker: '006208.TW', currency: 'TWD', shares: 25000, price: 211, targetWeight: 15, ytd: 18.2 },
+                { ticker: 'VOO', currency: 'USD', shares: 10, price: 673, targetWeight: 50, ytd: 12.2 }
             ]
         };
 
@@ -198,24 +326,58 @@
         let projectionChartInstance = null;
 
         // ==========================================
-        // 2. 初始化與事件綁定
+        // 2. 初始化與雙向滑桿綁定
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             loadStateToUI();
             calculateAndRender();
 
-            // 監聽全局參數變動，即時存檔並重算
+            // 綁定所有一般輸入框
             document.querySelectorAll('.auto-save').forEach(input => {
                 input.addEventListener('input', () => {
                     syncUIToState();
                     calculateAndRender();
                 });
             });
+
+            // 綁定生活費滑桿與數字框雙向連動
+            const livingInput = document.getElementById('param-living-wan');
+            const livingSlider = document.getElementById('slider-living-wan');
+            livingSlider.addEventListener('input', (e) => {
+                livingInput.value = e.target.value;
+                syncUIToState();
+                calculateAndRender();
+            });
+            livingInput.addEventListener('input', (e) => {
+                livingSlider.value = e.target.value;
+            });
+
+            // 綁定每月新投入滑桿與數字框雙向連動
+            const monthlyInput = document.getElementById('param-monthly-add-wan');
+            const monthlySlider = document.getElementById('slider-monthly-add');
+            monthlySlider.addEventListener('input', (e) => {
+                monthlyInput.value = e.target.value;
+                syncUIToState();
+                calculateAndRender();
+            });
+            monthlyInput.addEventListener('input', (e) => {
+                monthlySlider.value = e.target.value;
+            });
         });
 
         function loadStateToUI() {
+            document.getElementById('param-birth').value = appState.birthDate || '1990-01-03';
+            document.getElementById('param-retire-age').value = appState.targetRetireAge || 45;
+            document.getElementById('param-living-wan').value = appState.livingCostWan ?? 100;
+            document.getElementById('slider-living-wan').value = appState.livingCostWan ?? 100;
+            document.getElementById('param-monthly-add-wan').value = appState.monthlyAddWan ?? 4.5;
+            document.getElementById('slider-monthly-add').value = appState.monthlyAddWan ?? 4.5;
+            document.getElementById('param-inflation').value = appState.inflationRate ?? 2.0;
+            document.getElementById('param-return').value = appState.expectedReturn ?? 7.0;
+
             document.getElementById('param-fx').value = appState.fxRate;
             document.getElementById('param-cash').value = appState.cashBufferWan;
+            document.getElementById('param-loan').value = appState.loanAmountWan ?? 0;
             document.getElementById('param-tolerance').value = appState.tolerance;
             document.getElementById('param-withdrawal').value = appState.withdrawalRate;
             document.getElementById('param-crash-threshold').value = appState.crashThreshold;
@@ -231,7 +393,7 @@
             const container = document.getElementById('asset-inputs');
             const row = document.createElement('div');
             row.className = "grid grid-cols-12 gap-1 items-center relative group bg-slate-950/60 p-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition asset-row pr-5";
-            row.dataset.ytd = ytd; // 儲存 YTD 數據
+            row.dataset.ytd = ytd;
 
             row.innerHTML = `
                 <div class="col-span-3">
@@ -255,7 +417,6 @@
                 <button onclick="removeAssetRow(this)" class="absolute right-1 text-slate-600 hover:text-rose-400 transition text-base font-bold" title="移除">×</button>
             `;
 
-            // 綁定輸入框即時存檔與計算
             row.querySelectorAll('input, select').forEach(el => {
                 el.addEventListener('input', () => {
                     syncUIToState();
@@ -278,10 +439,18 @@
         }
 
         function syncUIToState() {
+            appState.birthDate = document.getElementById('param-birth').value || '1990-01-03';
+            appState.targetRetireAge = parseFloat(document.getElementById('param-retire-age').value) || 45;
+            appState.livingCostWan = parseFloat(document.getElementById('param-living-wan').value) || 100;
+            appState.monthlyAddWan = parseFloat(document.getElementById('param-monthly-add-wan').value) || 0;
+            appState.inflationRate = parseFloat(document.getElementById('param-inflation').value) || 2.0;
+            appState.expectedReturn = parseFloat(document.getElementById('param-return').value) || 7.0;
+
             appState.fxRate = parseFloat(document.getElementById('param-fx').value) || 32.5;
             appState.cashBufferWan = parseFloat(document.getElementById('param-cash').value) || 0;
+            appState.loanAmountWan = parseFloat(document.getElementById('param-loan').value) || 0;
             appState.tolerance = parseFloat(document.getElementById('param-tolerance').value) || 5;
-            appState.withdrawalRate = parseFloat(document.getElementById('param-withdrawal').value) || 4;
+            appState.withdrawalRate = parseFloat(document.getElementById('param-withdrawal').value) || 3.5;
             appState.crashThreshold = parseFloat(document.getElementById('param-crash-threshold').value) || -15;
 
             const rows = document.querySelectorAll('.asset-row');
@@ -298,11 +467,8 @@
             });
             appState.assets = newAssets;
 
-            // 存入瀏覽器 LocalStorage
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-            
-            const statusEl = document.getElementById('save-status');
-            statusEl.innerText = "💾 已同步儲存 (" + new Date().toLocaleTimeString() + ")";
+            document.getElementById('save-status').innerText = "💾 已同步儲存 (" + new Date().toLocaleTimeString() + ")";
         }
 
         function resetDefaultData() {
@@ -314,27 +480,75 @@
             }
         }
 
+        function exportConfig() {
+            const jsonStr = JSON.stringify(appState);
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                alert("✅ 已將你的完整持倉與參數備份碼複製到剪貼簿！\n你可以貼在 LINE 或記事本，換裝置時點「匯入還原」即可同步。");
+            }).catch(() => {
+                prompt("請全選並複製以下備份碼：", jsonStr);
+            });
+        }
+
+        function importConfig() {
+            const input = prompt("請貼上先前匯出的備份碼：");
+            if (!input) return;
+            try {
+                const parsed = JSON.parse(input);
+                if (parsed && Array.isArray(parsed.assets)) {
+                    appState = parsed;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                    loadStateToUI();
+                    calculateAndRender();
+                    alert("✅ 持倉與設定已成功還原！");
+                } else {
+                    alert("❌ 備份碼格式不正確。");
+                }
+            } catch (e) {
+                alert("❌ 無法解析備份碼，請確認是否複製完整。");
+            }
+        }
+
         // ==========================================
-        // 3. 純前端抓報價模組 (透過公開 CORS Proxy 呼叫 Yahoo Finance)
+        // 3. 純前端抓報價模組 (支援自動補 .TW 與雙代理備援)
         // ==========================================
-        async function fetchYahooQuote(symbol) {
-            // 使用 allorigins 免費代理繞過瀏覽器跨域限制
-            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=ytd&interval=1d`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-            
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error('Network error');
-            const data = await response.json();
-            const parsed = JSON.parse(data.contents);
-            
-            const meta = parsed.chart.result[0].meta;
-            const closes = parsed.chart.result[0].indicators.quote[0].close.filter(c => c !== null);
-            
-            const currentPrice = meta.regularMarketPrice;
-            const jan1Price = closes[0] || currentPrice;
-            const ytdPercent = ((currentPrice - jan1Price) / jan1Price) * 100;
-            
-            return { price: currentPrice, ytd: ytdPercent };
+        async function fetchSingleSymbol(yahooSymbol) {
+            const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?range=ytd&interval=1d`;
+            const proxies = [
+                `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+            ];
+
+            for (const proxyUrl of proxies) {
+                try {
+                    const res = await fetch(proxyUrl);
+                    if (!res.ok) continue;
+                    const raw = await res.json();
+                    const parsed = raw.contents ? JSON.parse(raw.contents) : raw;
+                    if (!parsed.chart || !parsed.chart.result) continue;
+
+                    const meta = parsed.chart.result[0].meta;
+                    const closes = parsed.chart.result[0].indicators.quote[0].close.filter(c => c !== null);
+                    const currentPrice = meta.regularMarketPrice;
+                    const jan1Price = closes[0] || currentPrice;
+                    const ytdPercent = ((currentPrice - jan1Price) / jan1Price) * 100;
+                    return { price: currentPrice, ytd: ytdPercent };
+                } catch (e) {
+                    continue;
+                }
+            }
+            throw new Error('All proxies failed');
+        }
+
+        async function fetchYahooQuoteSmart(ticker, currency) {
+            // 若為台幣資產且未加 .TW/.TWO，自動嘗試補上 .TW
+            if (currency === 'TWD' && !ticker.includes('.')) {
+                try {
+                    return await fetchSingleSymbol(`${ticker}.TW`);
+                } catch {
+                    return await fetchSingleSymbol(`${ticker}.TWO`);
+                }
+            }
+            return await fetchSingleSymbol(ticker);
         }
 
         async function fetchLiveMarketData() {
@@ -343,20 +557,19 @@
             btn.disabled = true;
 
             try {
-                // 1. 抓取匯率
-                const fxData = await fetchYahooQuote('USDTWD=X');
+                const fxData = await fetchSingleSymbol('USDTWD=X');
                 if (fxData && fxData.price) {
                     appState.fxRate = parseFloat(fxData.price.toFixed(2));
                     document.getElementById('param-fx').value = appState.fxRate;
                 }
 
-                // 2. 抓取各檔股票市價與 YTD
                 const rows = document.querySelectorAll('.asset-row');
                 for (let i = 0; i < rows.length; i++) {
-                    const ticker = rows[i].querySelector('.t_ticker').value.trim();
+                    const ticker = rows[i].querySelector('.t_ticker').value.trim().toUpperCase();
+                    const currency = rows[i].querySelector('.t_currency').value;
                     if (!ticker) continue;
                     try {
-                        const quote = await fetchYahooQuote(ticker);
+                        const quote = await fetchYahooQuoteSmart(ticker, currency);
                         rows[i].querySelector('.t_price').value = quote.price.toFixed(2);
                         rows[i].dataset.ytd = quote.ytd.toFixed(2);
                     } catch (e) {
@@ -376,32 +589,70 @@
         }
 
         // ==========================================
-        // 4. 核心財務計算與決策邏輯
+        // 4. 核心財務計算、退休倒數與決策邏輯
         // ==========================================
         function calculateAndRender() {
             const fx = appState.fxRate;
             const cashBufferTWD = appState.cashBufferWan * 10000;
+            const loanTWD = appState.loanAmountWan * 10000;
             const tol = appState.tolerance / 100;
             const wRate = appState.withdrawalRate / 100;
             const crashLimit = appState.crashThreshold;
 
+            // 1. 計算精確年齡與退休倒數
+            const now = new Date();
+            const birth = new Date(appState.birthDate);
+            const currentAge = isNaN(birth.getTime()) ? 36.8 : (now - birth) / (1000 * 60 * 60 * 24 * 365.2425);
+            const retireAge = appState.targetRetireAge;
+            const yearsToRetire = Math.max(0, retireAge - currentAge);
+            const retireDate = new Date(birth.getFullYear() + retireAge, birth.getMonth(), birth.getDate());
+            const retireYearStr = isNaN(retireDate.getTime()) ? '' : `${retireDate.getFullYear()}年${retireDate.getMonth() + 1}月`;
+
+            document.getElementById('badge-countdown').innerText = yearsToRetire > 0 ? `倒數 ${yearsToRetire.toFixed(1)} 年` : `已達退休年齡`;
+            document.getElementById('fire-goal-title').innerText = `${retireAge} 歲提早退休達標進度 (${retireYearStr})`;
+            document.getElementById('fire-goal-subtitle').innerText = `目前年齡 ${currentAge.toFixed(1)} 歲 • 距離設定退休日還有 ${yearsToRetire.toFixed(1)} 年`;
+
+            // 2. 計算通膨調整後的退休首年生活費 & 達標資產門檻
+            const inf = appState.inflationRate / 100;
+            const retRate = appState.expectedReturn / 100;
+            const nominalLivingAtRetireWan = appState.livingCostWan * Math.pow(1 + inf, yearsToRetire);
+            const nominalLivingAtRetireTWD = nominalLivingAtRetireWan * 10000;
+            const requiredFireAssetsTWD = wRate > 0 ? (nominalLivingAtRetireTWD / wRate) : 0;
+
+            document.getElementById('hint-nominal-cost').innerText = `${retireAge}歲當年約需 ${nominalLivingAtRetireWan.toFixed(1)} 萬/年`;
+            document.getElementById('fire-nominal-need').innerText = `$${Math.round(nominalLivingAtRetireTWD).toLocaleString()}/年`;
+            document.getElementById('fire-target-pool').innerText = `(達標門檻: ${Math.round(requiredFireAssetsTWD / 10000).toLocaleString()} 萬)`;
+
+            // 3. 計算各標的市值、台美股分布與稅後股息
             let totalInvestedTWD = 0;
-            let totalDividendTWD = 0;
+            let totalTWTWD = 0;
+            let totalUSDTWD = 0;
+            let totalNetDividendTWD = 0;
+            let usNetDividendTWD = 0;
             let isMarketCrashing = false;
             let worstDropTicker = "";
             let worstDropPct = 0;
+            let weightSum = 0;
 
-            // 計算各標的市值與股息
             const computedAssets = appState.assets.filter(a => a.ticker !== '').map(a => {
+                weightSum += a.targetWeight;
                 const valLocal = a.shares * a.price;
                 const valTWD = a.currency === 'USD' ? valLocal * fx : valLocal;
-                const divYield = a.currency === 'TWD' ? 0.03 : 0.015; // 台股抓3%，美股抓1.5%
-                const divTWD = valTWD * divYield;
+                
+                // 股息估算：台股抓 3.0% 免預扣；美股抓 1.35% 並扣除 30% 預扣稅 (實領約 0.945%)
+                let netDivTWD = 0;
+                if (a.currency === 'TWD') {
+                    totalTWTWD += valTWD;
+                    netDivTWD = valTWD * 0.03;
+                } else {
+                    totalUSDTWD += valTWD;
+                    netDivTWD = valTWD * 0.0135 * 0.70;
+                    usNetDividendTWD += netDivTWD;
+                }
 
                 totalInvestedTWD += valTWD;
-                totalDividendTWD += divTWD;
+                totalNetDividendTWD += netDivTWD;
 
-                // 檢查是否觸發股災警戒
                 if (a.ytd <= crashLimit) {
                     isMarketCrashing = true;
                     if (a.ytd < worstDropPct) {
@@ -410,25 +661,96 @@
                     }
                 }
 
-                return { ...a, valTWD, divTWD };
+                return { ...a, valTWD, netDivTWD };
             });
 
-            const totalNetWorthTWD = totalInvestedTWD + cashBufferTWD;
-            const targetWithdrawalTWD = totalInvestedTWD * wRate; // 以投資資產計算 4%
-            const shortfallTWD = Math.max(0, targetWithdrawalTWD - totalDividendTWD);
+            const weightBadge = document.getElementById('weight-sum-badge');
+            weightBadge.innerText = `目標權重總和: ${weightSum}%`;
+            weightBadge.className = weightSum === 100 ? "text-[11px] text-emerald-400 font-semibold" : "text-[11px] text-rose-400 font-bold";
+
+            // 4. 推算退休當日預估累積資產 (現有複利 + 每月新資金投入美股複利)
+            const monthlyAddTWD = appState.monthlyAddWan * 10000;
+            const monthsToRetire = yearsToRetire * 12;
+            const monthlyRate = Math.pow(1 + retRate, 1 / 12) - 1;
+
+            const fvCurrentTotal = totalInvestedTWD * Math.pow(1 + retRate, yearsToRetire);
+            const fvMonthlyContrib = (monthsToRetire > 0 && monthlyRate > 0)
+                ? monthlyAddTWD * ((Math.pow(1 + monthlyRate, monthsToRetire) - 1) / monthlyRate)
+                : monthlyAddTWD * monthsToRetire;
+            const projectedAssetsAtRetireTWD = fvCurrentTotal + fvMonthlyContrib;
+
+            // 推算退休當日的台美股比例變化 (假設新資金 100% 投入美股)
+            const fvTWAtRetire = totalTWTWD * Math.pow(1 + retRate, yearsToRetire);
+            const fvUSAtRetire = (totalUSDTWD * Math.pow(1 + retRate, yearsToRetire)) + fvMonthlyContrib;
+            const projUSSharePct = projectedAssetsAtRetireTWD > 0 ? (fvUSAtRetire / projectedAssetsAtRetireTWD * 100) : 0;
+
+            const twSharePct = totalInvestedTWD > 0 ? (totalTWTWD / totalInvestedTWD * 100) : 0;
+            const usSharePct = totalInvestedTWD > 0 ? (totalUSDTWD / totalInvestedTWD * 100) : 0;
+
+            document.getElementById('bar-tw-share').style.width = `${twSharePct}%`;
+            document.getElementById('bar-tw-share').innerText = twSharePct >= 12 ? `台股 ${twSharePct.toFixed(1)}%` : '';
+            document.getElementById('bar-us-share').style.width = `${usSharePct}%`;
+            document.getElementById('bar-us-share').innerText = usSharePct >= 12 ? `美股/全球 ${usSharePct.toFixed(1)}%` : '';
+            document.getElementById('macro-proj-hint').innerText = `若新資金全買美股，${retireAge}歲時美股佔比將自然追至 ${projUSSharePct.toFixed(1)}%`;
+
+            // 更新達標進度條
+            const nowPct = requiredFireAssetsTWD > 0 ? (totalInvestedTWD / requiredFireAssetsTWD * 100) : 0;
+            const projPct = requiredFireAssetsTWD > 0 ? (projectedAssetsAtRetireTWD / requiredFireAssetsTWD * 100) : 0;
+
+            document.getElementById('now-invested-label').innerText = `$${Math.round(totalInvestedTWD).toLocaleString()} (${Math.round(totalInvestedTWD/10000).toLocaleString()}萬)`;
+            document.getElementById('now-progress-pct').innerText = `${nowPct.toFixed(1)}%`;
+            document.getElementById('bar-now-progress').style.width = `${Math.min(100, nowPct)}%`;
+
+            document.getElementById('proj-retire-label').innerText = `$${Math.round(projectedAssetsAtRetireTWD).toLocaleString()} (${Math.round(projectedAssetsAtRetireTWD/10000).toLocaleString()}萬)`;
+            const projBadge = document.getElementById('proj-progress-badge');
+            const projBar = document.getElementById('bar-proj-progress');
+            if (projPct >= 100) {
+                projBadge.innerText = `${projPct.toFixed(1)}% (✅ 預計可準時達標)`;
+                projBadge.className = "font-bold text-emerald-400";
+                projBar.className = "bg-emerald-500 h-2.5 rounded-full transition-all duration-500";
+            } else {
+                const gapWan = Math.round((requiredFireAssetsTWD - projectedAssetsAtRetireTWD) / 10000);
+                projBadge.innerText = `${projPct.toFixed(1)}% (⚠️ 尚差約 ${gapWan.toLocaleString()} 萬)`;
+                projBadge.className = "font-bold text-amber-400";
+                projBar.className = "bg-amber-500 h-2.5 rounded-full transition-all duration-500";
+            }
+            projBar.style.width = `${Math.min(100, projPct)}%`;
+
+            // 5. 更新四大 KPI 卡片與質押維持率
+            const netWorthTWD = totalInvestedTWD + cashBufferTWD - loanTWD;
+            const currentSafeWithdrawTWD = totalInvestedTWD * wRate;
+            const shortfallTWD = Math.max(0, currentSafeWithdrawTWD - totalNetDividendTWD);
             const cashYears = shortfallTWD > 0 ? (cashBufferTWD / shortfallTWD).toFixed(1) : "∞";
 
-            // 更新頂部 KPI
             document.getElementById('kpi-invested').innerText = "$" + Math.round(totalInvestedTWD).toLocaleString();
-            document.getElementById('kpi-total-with-cash').innerText = `含現金總資產: $${Math.round(totalNetWorthTWD).toLocaleString()}`;
-            document.getElementById('kpi-withdraw').innerText = "$" + Math.round(targetWithdrawalTWD).toLocaleString();
-            document.getElementById('kpi-monthly').innerText = `約每月 $${Math.round(targetWithdrawalTWD / 12).toLocaleString()}`;
-            document.getElementById('kpi-dividend').innerText = "$" + Math.round(totalDividendTWD).toLocaleString();
-            const coverPct = targetWithdrawalTWD > 0 ? Math.min(100, (totalDividendTWD / targetWithdrawalTWD) * 100).toFixed(0) : 0;
-            document.getElementById('kpi-div-cover').innerText = `自然配息覆蓋率: ${coverPct}%`;
+            document.getElementById('kpi-net-worth').innerText = `含現金扣負債淨值: $${Math.round(netWorthTWD).toLocaleString()}`;
+            document.getElementById('kpi-swr-label').innerText = `當前資產可提領額 (${appState.withdrawalRate}%)`;
+            document.getElementById('kpi-withdraw').innerText = "$" + Math.round(currentSafeWithdrawTWD).toLocaleString();
+            document.getElementById('kpi-monthly').innerText = `約每月 $${Math.round(currentSafeWithdrawTWD / 12).toLocaleString()}`;
+            document.getElementById('kpi-dividend').innerText = "$" + Math.round(totalNetDividendTWD).toLocaleString();
+            const coverPct = currentSafeWithdrawTWD > 0 ? Math.min(100, (totalNetDividendTWD / currentSafeWithdrawTWD) * 100).toFixed(0) : 0;
+            document.getElementById('kpi-div-cover').innerText = `美股已扣30%稅 • 覆蓋率 ${coverPct}%`;
             document.getElementById('kpi-cash-years').innerText = `${cashYears} 年`;
 
-            // 計算再平衡與產出表格
+            const ltvEl = document.getElementById('kpi-ltv-status');
+            if (loanTWD > 0) {
+                const maintRatio = totalTWTWD > 0 ? (totalTWTWD / loanTWD * 100) : 0;
+                if (maintRatio < 170) {
+                    ltvEl.innerText = `🚨 質押維持率 ${maintRatio.toFixed(0)}% (極危險)`;
+                    ltvEl.className = "text-[11px] text-rose-400 font-bold mt-1";
+                } else if (maintRatio < 220) {
+                    ltvEl.innerText = `⚠️ 質押維持率 ${maintRatio.toFixed(0)}% (注意)`;
+                    ltvEl.className = "text-[11px] text-amber-400 font-semibold mt-1";
+                } else {
+                    ltvEl.innerText = `🛡️ 質押維持率 ${maintRatio.toFixed(0)}% (極安全)`;
+                    ltvEl.className = "text-[11px] text-emerald-400 mt-1";
+                }
+            } else {
+                ltvEl.innerText = `現金緩衝安全氣囊 (無質押負債)`;
+                ltvEl.className = "text-[11px] text-slate-500 mt-1";
+            }
+
+            // 6. 產出持倉明細表與再平衡行動
             const tbody = document.getElementById('table-assets');
             tbody.innerHTML = '';
             let rebalanceActions = [];
@@ -467,6 +789,7 @@
                         <td class="py-3 font-bold text-white">${a.ticker}</td>
                         <td class="py-3 text-right text-slate-300">${a.shares.toLocaleString()}</td>
                         <td class="py-3 text-right text-slate-300">$${a.price.toLocaleString()} <span class="text-[10px] text-slate-500">${a.currency}</span></td>
+                        <td class="py-3 text-right text-slate-200 font-medium">$${Math.round(a.valTWD).toLocaleString()}</td>
                         <td class="py-3 text-right ${ytdColor} font-medium">${a.ytd > 0 ? '+' : ''}${a.ytd.toFixed(1)}%</td>
                         <td class="py-3 text-right font-bold">${(currentWeight * 100).toFixed(1)}%</td>
                         <td class="py-3 text-right text-cyan-400">${a.targetWeight}%</td>
@@ -475,15 +798,12 @@
                 `;
             });
 
-            // ==========================================
-            // 5. 核心決策橫幅：今年該賣股還是忍痛拿現金？
-            // ==========================================
+            // 7. 核心決策橫幅
             const banner = document.getElementById('decision-banner');
             const actionList = document.getElementById('action-list');
             actionList.innerHTML = '';
 
             if (isMarketCrashing) {
-                // 股災防禦模式
                 banner.className = "p-5 rounded-xl border border-rose-500/50 bg-rose-950/30 shadow-lg";
                 banner.innerHTML = `
                     <div class="flex items-start gap-3">
@@ -492,58 +812,65 @@
                             <h3 class="text-lg font-bold text-rose-400">啟動股災防禦模式：嚴禁賣股！請忍痛動用「現金緩衝池」</h3>
                             <p class="text-sm text-slate-300 mt-1">
                                 偵測到 <b>${worstDropTicker}</b> 今年跌幅已達 <span class="text-rose-400 font-bold">${worstDropPct.toFixed(1)}%</span>（觸及 ${crashLimit}% 警戒線）。
-                                此時賣股會嚴重傷害未來複利本金。建議今年生活費 <b>$${Math.round(targetWithdrawalTWD).toLocaleString()}</b> 的提領方式如下：
+                                此時賣股會永久傷害複利本金。若處於提領期，建議生活費 <b>$${Math.round(currentSafeWithdrawTWD).toLocaleString()}</b> 執行方式：
                             </p>
                             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm bg-slate-950/60 p-3 rounded-lg border border-rose-900/50">
-                                <div>1️⃣ 先領取自然配息：<span class="text-emerald-400 font-bold">$${Math.round(totalDividendTWD).toLocaleString()}</span></div>
-                                <div>2️⃣ 從現金緩衝池提領：<span class="text-amber-400 font-bold">$${Math.round(shortfallTWD).toLocaleString()}</span> (提領後現金池還可撐 <b>${cashBufferTWD > shortfallTWD ? ((cashBufferTWD - shortfallTWD)/shortfallTWD).toFixed(1) : 0}</b> 年)</div>
+                                <div>1️⃣ 先領取稅後自然配息：<span class="text-emerald-400 font-bold">$${Math.round(totalNetDividendTWD).toLocaleString()}</span></div>
+                                <div>2️⃣ 從現金緩衝池提領：<span class="text-amber-400 font-bold">$${Math.round(shortfallTWD).toLocaleString()}</span> (動用後還可撐 <b>${cashBufferTWD > shortfallTWD ? ((cashBufferTWD - shortfallTWD)/shortfallTWD).toFixed(1) : 0}</b> 年)</div>
                             </div>
                         </div>
                     </div>
                 `;
-                actionList.innerHTML = `<li class="text-rose-300">⏸️ <b>暫停賣出任何股票</b>：請將左側「現金緩衝池」扣除 ${(shortfallTWD/10000).toFixed(1)} 萬，紀錄今年的現金消耗。</li>`;
+                actionList.innerHTML = `<li class="text-rose-300">⏸️ <b>暫停賣出任何股票</b>：請將左側「現金緩衝池」扣除 ${(shortfallTWD/10000).toFixed(1)} 萬；若仍在累積期，則是低檔加碼美股的絕佳時機。</li>`;
             } else {
-                // 正常或牛市提領模式
                 banner.className = "p-5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 shadow-lg";
                 const sellTargetName = highestOverweightAsset ? highestOverweightAsset.ticker : "超標標的";
                 const sellTargetShares = (highestOverweightAsset && highestOverweightAsset.price > 0) 
                     ? Math.round((shortfallTWD / (highestOverweightAsset.currency === 'USD' ? fx : 1)) / highestOverweightAsset.price) 
                     : 0;
+                const estOverseasIncome = usNetDividendTWD + (highestOverweightAsset && highestOverweightAsset.currency === 'USD' ? shortfallTWD * 0.4 : 0);
 
                 banner.innerHTML = `
                     <div class="flex items-start gap-3">
                         <span class="text-3xl">☀️</span>
-                        <div>
-                            <h3 class="text-lg font-bold text-emerald-400">市場處於正常軌道：執行「配息優先 + 賣高補缺口」提領</h3>
+                        <div class="w-full">
+                            <h3 class="text-lg font-bold text-emerald-400">${yearsToRetire > 0 ? '目前處於「退休前累積期」：水龍頭 100% 導向落後美股' : '市場處於正常軌道：執行「稅後配息 + 賣高補缺口」提領'}</h3>
                             <p class="text-sm text-slate-300 mt-1">
-                                現金緩衝池保持完整不動用。今年生活費 <b>$${Math.round(targetWithdrawalTWD).toLocaleString()}</b> 的最佳提領組合：
+                                現金緩衝池保持完整不動用。若按當前資產規模執行 ${appState.withdrawalRate}% 提領（<b>$${Math.round(currentSafeWithdrawTWD).toLocaleString()}/年</b>）：
                             </p>
                             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm bg-slate-950/60 p-3 rounded-lg border border-emerald-900/50">
-                                <div>1️⃣ 優先花費自然配息：<span class="text-emerald-400 font-bold">$${Math.round(totalDividendTWD).toLocaleString()}</span></div>
+                                <div>1️⃣ 稅後自然股息收入：<span class="text-emerald-400 font-bold">$${Math.round(totalNetDividendTWD).toLocaleString()}</span></div>
                                 <div>2️⃣ 賣出漲幅領先的 <b>${sellTargetName}</b> 約 <span class="text-cyan-400 font-bold">${sellTargetShares.toLocaleString()} 股</span> 補足缺口 ($${Math.round(shortfallTWD).toLocaleString()})</div>
                             </div>
+                            <p class="text-[11px] text-slate-400 mt-2">
+                                💡 稅務檢核：預估本年度海外所得約 <b>$${Math.round(estOverseasIncome).toLocaleString()}</b>（未滿 100 萬免申報；基本所得額 750 萬內全免稅）。
+                            </p>
                         </div>
                     </div>
                 `;
 
+                if (yearsToRetire > 0) {
+                    actionList.innerHTML += `<li class="text-cyan-300">💧 <b>累積期無痛調倉建議</b>：無需急著一次砍掉舊台股，請將每月 <b>${appState.monthlyAddWan} 萬</b>新資金與台股配息（約 <b>${(totalNetDividendTWD/10000).toFixed(1)} 萬/年</b>），透過國泰複委託定期定額（手續費 0.1 美元）全數買入落後的 <b>VOO / VT</b>。</li>`;
+                }
+
                 if (rebalanceActions.length === 0) {
-                    actionList.innerHTML = `<li class="text-emerald-400">✅ 各標的佔比皆在 ±${appState.tolerance}% 容錯範圍內。若尚未退休，無需進行再平衡交易；若已退休，僅需賣出上述 ${sellTargetShares.toLocaleString()} 股 ${sellTargetName} 作為生活費即可。</li>`;
+                    actionList.innerHTML += `<li class="text-emerald-400">✅ 各標的佔比皆在 ±${appState.tolerance}% 容錯範圍內，無需進行賣出再平衡交易。</li>`;
                 } else {
                     rebalanceActions.forEach(act => {
-                        actionList.innerHTML += `<li class="text-slate-200">👉 ${act}</li>`;
+                        actionList.innerHTML += `<li class="text-slate-200">👉 若執行一次性完整再平衡：${act}</li>`;
                     });
                 }
             }
 
-            // 更新動態圖表
-            updateCharts(computedAssets, totalInvestedTWD, targetWithdrawalTWD);
+            // 8. 更新動態圖表
+            updateCharts(computedAssets, totalInvestedTWD, currentAge, retireAge, retRate, inf, monthlyAddTWD, nominalLivingAtRetireTWD);
         }
 
         // ==========================================
-        // 6. Chart.js 動態圖表渲染
+        // 5. Chart.js 兩階段全生涯動態圖表渲染
         // ==========================================
-        function updateCharts(assets, totalInvested, annualWithdrawal) {
-            // 圖表 1：目前佔比 vs 目標佔比 (長條圖)
+        function updateCharts(assets, totalInvested, currentAge, retireAge, retRate, inf, monthlyAddTWD, nominalLivingAtRetireTWD) {
+            // 圖表 1：目前佔比 vs 目標佔比
             const ctx1 = document.getElementById('allocationChart').getContext('2d');
             if (allocationChartInstance) allocationChartInstance.destroy();
 
@@ -577,53 +904,80 @@
                 }
             });
 
-            // 圖表 2：未來 20 年資產推演 (折線圖)
+            // 圖表 2：全生涯推演 (從現在年齡一路推演至 85 歲)
             const ctx2 = document.getElementById('projectionChart').getContext('2d');
             if (projectionChartInstance) projectionChartInstance.destroy();
 
-            const years = Array.from({length: 21}, (_, i) => `第${i}年`);
+            const startAgeInt = Math.floor(currentAge);
+            const endAgeInt = Math.max(85, retireAge + 30);
+            const labels = [];
+            const balancesWan = [];
+            const withdrawalsWan = [];
+
             let balance = totalInvested;
-            const projectedBalances = [Math.round(balance / 10000)];
-            const projectedWithdrawals = [Math.round(annualWithdrawal / 10000)];
-            
-            let currentW = annualWithdrawal;
-            for (let i = 1; i <= 20; i++) {
-                // 假設名目報酬 7%，通膨 2%
-                balance = (balance - currentW) * 1.07;
-                currentW = currentW * 1.02;
-                projectedBalances.push(Math.max(0, Math.round(balance / 10000)));
-                projectedWithdrawals.push(Math.round(currentW / 10000));
+            let annualContrib = monthlyAddTWD * 12;
+            let currentWithdrawal = 0;
+
+            document.getElementById('chart-sub-desc').innerText = `${startAgeInt}～${retireAge}歲累積期(年投入${(annualContrib/10000).toFixed(0)}萬)；${retireAge}～${endAgeInt}歲提領期(首年${(nominalLivingAtRetireTWD/10000).toFixed(1)}萬隨通膨調升)`;
+
+            for (let age = startAgeInt; age <= endAgeInt; age++) {
+                labels.push(`${age}歲`);
+                balancesWan.push(Math.max(0, Math.round(balance / 10000)));
+
+                if (age < retireAge) {
+                    // 退休前累積期：不提領，加上新資金投入並複利
+                    withdrawalsWan.push(0);
+                    balance = (balance + annualContrib) * (1 + retRate);
+                } else {
+                    // 退休後提領期：停止新投入，每年依通膨調整提領生活費
+                    if (age === retireAge) {
+                        currentWithdrawal = nominalLivingAtRetireTWD;
+                    }
+                    withdrawalsWan.push(Math.round(currentWithdrawal / 10000));
+                    balance = (balance - currentWithdrawal) * (1 + retRate);
+                    currentWithdrawal = currentWithdrawal * (1 + inf);
+                }
             }
 
             projectionChartInstance = new Chart(ctx2, {
                 type: 'line',
                 data: {
-                    labels: years,
+                    labels: labels,
                     datasets: [
                         {
-                            label: '預估剩餘總資產 (萬)',
-                            data: projectedBalances,
+                            label: '預估總資產 (萬)',
+                            data: balancesWan,
                             borderColor: '#34d399',
-                            backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                            backgroundColor: 'rgba(52, 211, 153, 0.12)',
                             fill: true,
-                            tension: 0.3
+                            tension: 0.3,
+                            pointRadius: (ctx) => ctx.label === `${retireAge}歲` ? 6 : 2,
+                            pointBackgroundColor: (ctx) => ctx.label === `${retireAge}歲` ? '#22d3ee' : '#34d399'
                         },
                         {
-                            label: '當年提領生活費 (萬/含2%通膨)',
-                            data: projectedWithdrawals,
+                            label: '退休後年提領生活費 (萬/含通膨)',
+                            data: withdrawalsWan,
                             borderColor: '#fbbf24',
                             borderDash: [5, 5],
-                            tension: 0.3
+                            tension: 0.3,
+                            pointRadius: 1
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 11 } } } },
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1', font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (ctx) => ctx.label === `${retireAge}歲` ? '🎯 預計正式退休日轉折點' : ''
+                            }
+                        }
+                    },
                     scales: {
                         y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 7 } }
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 9 } }
                     }
                 }
             });
